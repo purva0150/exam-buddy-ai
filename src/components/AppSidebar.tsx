@@ -8,9 +8,10 @@ import {
   FileSpreadsheet,
   Bot,
   Bell,
+  LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Sidebar,
   SidebarContent,
@@ -21,10 +22,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
-const mainItems = [
+const adminItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Faculty", url: "/faculty", icon: Users },
   { title: "Exam Schedule", url: "/exams", icon: Calendar },
@@ -33,8 +36,14 @@ const mainItems = [
   { title: "Conflicts", url: "/conflicts", icon: AlertTriangle },
 ];
 
-const secondaryItems = [
+const adminSecondary = [
   { title: "Duty Roster", url: "/roster", icon: FileSpreadsheet },
+  { title: "Assistant", url: "/assistant", icon: Bot },
+  { title: "Notifications", url: "/notifications", icon: Bell },
+];
+
+const facultyItems = [
+  { title: "My Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Assistant", url: "/assistant", icon: Bot },
   { title: "Notifications", url: "/notifications", icon: Bell },
 ];
@@ -42,7 +51,10 @@ const secondaryItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
+  const { role, profile, signOut } = useAuth();
+
+  const mainItems = role === "admin" ? adminItems : facultyItems;
+  const secondaryItems = role === "admin" ? adminSecondary : [];
 
   return (
     <Sidebar collapsible="icon">
@@ -87,28 +99,48 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Reports & Tools</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {secondaryItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className="hover:bg-muted/50"
-                      activeClassName="bg-muted text-primary font-medium"
-                    >
-                      <item.icon className="mr-2 h-4 w-4 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {secondaryItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Reports & Tools</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {secondaryItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        className="hover:bg-muted/50"
+                        activeClassName="bg-muted text-primary font-medium"
+                      >
+                        <item.icon className="mr-2 h-4 w-4 shrink-0" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
+      <SidebarFooter className="p-3 border-t border-border">
+        {!collapsed && (
+          <div className="flex items-center justify-between">
+            <div className="truncate">
+              <p className="text-xs font-medium truncate">{profile?.full_name || "User"}</p>
+              <p className="text-[10px] text-muted-foreground capitalize">{role || "loading..."}</p>
+            </div>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={signOut}>
+              <LogOut className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+        {collapsed && (
+          <Button variant="ghost" size="icon" className="h-7 w-7 mx-auto" onClick={signOut}>
+            <LogOut className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }
