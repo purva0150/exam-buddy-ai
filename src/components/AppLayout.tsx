@@ -3,9 +3,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, Link } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 
-const adminPageTitles: Record<string, string> = {
+const pageTitles: Record<string, string> = {
   "/": "Dashboard",
   "/faculty": "Faculty Management",
   "/exams": "Exam Schedule",
@@ -15,19 +14,12 @@ const adminPageTitles: Record<string, string> = {
   "/roster": "Duty Roster",
   "/assistant": "AI Assistant",
   "/notifications": "Notifications",
-};
-
-const facultyPageTitles: Record<string, string> = {
-  "/": "My Dashboard",
-  "/assistant": "AI Assistant",
-  "/notifications": "Notifications",
+  "/faculty-dashboard": "Faculty Dashboard",
 };
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { role } = useAuth();
-  const titles = role === "admin" ? adminPageTitles : facultyPageTitles;
-  const title = titles[location.pathname] || "EDAS";
+  const title = pageTitles[location.pathname] || "EDAS";
 
   return (
     <SidebarProvider>
