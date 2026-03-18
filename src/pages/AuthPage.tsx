@@ -12,6 +12,7 @@ const AuthPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [selectedRole, setSelectedRole] = useState<"faculty" | "admin">("faculty");
   const [loading, setLoading] = useState(false);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -28,7 +29,7 @@ const AuthPage = () => {
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { full_name: fullName },
+            data: { full_name: fullName, requested_role: selectedRole },
           },
         });
         if (error) throw error;
@@ -65,10 +66,43 @@ const AuthPage = () => {
 
         <form onSubmit={handleEmailAuth} className="space-y-4">
           {!isLogin && (
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Dr. Jane Smith" required />
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Dr. Jane Smith" required />
+              </div>
+
+              {/* Role Selection */}
+              <div className="space-y-2">
+                <Label>I am signing up as</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole("faculty")}
+                    className={`p-3 rounded-lg border text-sm font-medium transition-all ${
+                      selectedRole === "faculty"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <span className="block text-lg mb-1">🎓</span>
+                    Faculty
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole("admin")}
+                    className={`p-3 rounded-lg border text-sm font-medium transition-all ${
+                      selectedRole === "admin"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <span className="block text-lg mb-1">🛡️</span>
+                    Admin
+                  </button>
+                </div>
+              </div>
+            </>
           )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
