@@ -81,12 +81,26 @@ const ExamsPage = () => {
       return;
     }
 
+    // Parse time strings like "10:00 AM - 1:00 PM" or "10:00 AM" to HH:MM (24h)
+    const parseTime = (t: string): string => {
+      // Extract just the start time if it's a range
+      const part = t.split("-")[0].trim();
+      const match = part.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+      if (!match) return t; // Return as-is if already in HH:MM format
+      let hours = parseInt(match[1]);
+      const mins = match[2];
+      const ampm = match[3]?.toUpperCase();
+      if (ampm === "PM" && hours < 12) hours += 12;
+      if (ampm === "AM" && hours === 12) hours = 0;
+      return `${hours.toString().padStart(2, "0")}:${mins}`;
+    };
+
     const rows = lines.slice(1).map(line => {
       const cols = line.split(",").map(c => c.trim());
       return {
         subject: cols[subjectIdx],
         exam_date: cols[dateIdx],
-        exam_time: cols[timeIdx],
+        exam_time: parseTime(cols[timeIdx]),
         students: studentsIdx !== -1 ? parseInt(cols[studentsIdx]) || 0 : 0,
         invigilators_needed: invigilatorsIdx !== -1 ? parseInt(cols[invigilatorsIdx]) || 1 : 1,
       };
