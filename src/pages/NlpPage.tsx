@@ -1,16 +1,29 @@
 import { useState } from "react";
-import { nlpRequests } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 const NlpPage = () => {
   const [input, setInput] = useState("");
-  const [requests, setRequests] = useState(nlpRequests);
   const [processing, setProcessing] = useState(false);
   const [liveTokens, setLiveTokens] = useState<{ label: string; value: string }[]>([]);
+  const queryClient = useQueryClient();
 
-  const handleSubmit = () => {
+  const { data: requests = [] } = useQuery({
+    queryKey: ["nlp-requests"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("nlp_requests")
+        .select("*, profiles:faculty_id(full_name)")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const handleSubmit = async () => {
     if (!input.trim()) return;
     setProcessing(true);
     setLiveTokens([]);
@@ -34,22 +47,29 @@ const NlpPage = () => {
       simulatedTokens.push({ label: "Action", value: "Noted" });
     }
 
-    // Animate tokens appearing one by one
     simulatedTokens.forEach((t, i) => {
       setTimeout(() => setLiveTokens(prev => [...prev, t]), (i + 1) * 300);
     });
 
-    setTimeout(() => {
-      setRequests(prev => [{
-        id: `R${String(prev.length + 1).padStart(3, "0")}`,
-        faculty: "You",
-        text: input,
-        tokens: simulatedTokens,
-        status: "processed" as const,
-      }, ...prev]);
+    setTimeout(async () => {
+      // Get first faculty profile as a placeholder since no auth
+      const { data: profiles } = await supabase.from("profiles").select("id").limit(1);
+      const facultyId = profiles?.[0]?.id;
+
+      if (facultyId) {
+        await supabase.from("nlp_requests").insert({
+          faculty_id: facultyId,
+          request_text: input,
+          parsed_tokens: simulatedTokens,
+          status: "processed",
+        });
+        queryClient.invalidateQueries({ queryKey: ["nlp-requests"] });
+      }
+
       setInput("");
       setProcessing(false);
       setLiveTokens([]);
+      toast.success("Request processed");
     }, simulatedTokens.length * 300 + 600);
   };
 
@@ -93,22 +113,23 @@ const NlpPage = () => {
       {/* Request History */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold">Request History</h3>
-        {requests.map((r, i) => (
+        {requests.map((r: any, i: number) => (
           <motion.div key={r.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="stat-card">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <p className="text-xs text-muted-foreground data-mono">{r.id} · {r.faculty}</p>
-                <p className="text-sm mt-1">"{r.text}"</p>
+                <p className="text-xs text-muted-foreground data-mono">{(r as any).profiles?.full_name || "Unknown"}</p>
+                <p className="text-sm mt-1">"{r.request_text}"</p>
               </div>
               <Badge variant={r.status === "processed" ? "default" : "secondary"} className={r.status === "processed" ? "bg-success/10 text-success border-0" : ""}>{r.status}</Badge>
             </div>
             <div className="flex flex-wrap gap-1.5 mt-2">
-              {r.tokens.map((t, j) => (
+              {(Array.isArray(r.parsed_tokens) ? r.parsed_tokens : []).map((t: any, j: number) => (
                 <span key={j} className="token-badge">{t.label}: {t.value}</span>
               ))}
             </div>
           </motion.div>
         ))}
+        {requests.length === 0 && <p className="text-sm text-muted-foreground">No requests yet.</p>}
       </div>
     </div>
   );

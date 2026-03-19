@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { faculty, departments } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Upload } from "lucide-react";
+import { Search } from "lucide-react";
 
 const item = { hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0 } };
 
@@ -13,8 +13,34 @@ const FacultyPage = () => {
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("all");
 
-  const filtered = faculty.filter(f => {
-    const matchSearch = f.name.toLowerCase().includes(search.toLowerCase()) || f.id.toLowerCase().includes(search.toLowerCase());
+  const { data: facultyList = [] } = useQuery({
+    queryKey: ["faculty-page-list"],
+    queryFn: async () => {
+      const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "faculty");
+      if (!roles || roles.length === 0) return [];
+      const ids = roles.map(r => r.user_id);
+      const { data } = await supabase.from("profiles").select("id, full_name, department, specialization").in("id", ids);
+      return data || [];
+    },
+  });
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: ["faculty-page-assignments"],
+    queryFn: async () => {
+      const { data } = await supabase.from("duty_assignments").select("faculty_id, status");
+      return data || [];
+    },
+  });
+
+  const departments = [...new Set(facultyList.map((f: any) => f.department).filter(Boolean))];
+
+  const dutyCountMap: Record<string, number> = {};
+  assignments.forEach((a: any) => {
+    dutyCountMap[a.faculty_id] = (dutyCountMap[a.faculty_id] || 0) + 1;
+  });
+
+  const filtered = facultyList.filter((f: any) => {
+    const matchSearch = f.full_name.toLowerCase().includes(search.toLowerCase());
     const matchDept = deptFilter === "all" || f.department === deptFilter;
     return matchSearch && matchDept;
   });
@@ -31,13 +57,9 @@ const FacultyPage = () => {
             <SelectTrigger className="w-[180px] h-9"><SelectValue placeholder="Department" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Departments</SelectItem>
-              {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+              {departments.map(d => <SelectItem key={d} value={d!}>{d}</SelectItem>)}
             </SelectContent>
           </Select>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="press-effect"><Upload className="h-3.5 w-3.5 mr-1.5" />Import CSV</Button>
-          <Button size="sm" className="press-effect"><Plus className="h-3.5 w-3.5 mr-1.5" />Add Faculty</Button>
         </div>
       </div>
 
@@ -45,32 +67,26 @@ const FacultyPage = () => {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted/50 text-xs text-muted-foreground">
-              <th className="text-left p-3 font-medium">ID</th>
               <th className="text-left p-3 font-medium">Name</th>
               <th className="text-left p-3 font-medium">Department</th>
-              <th className="text-left p-3 font-medium">Workload</th>
-              <th className="text-left p-3 font-medium">Status</th>
+              <th className="text-left p-3 font-medium">Specialization</th>
+              <th className="text-left p-3 font-medium">Duties Assigned</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((f, i) => (
+            {filtered.map((f: any, i: number) => (
               <motion.tr key={f.id} variants={item} initial="hidden" animate="show" transition={{ delay: i * 0.03 }} className="border-t border-border hover:bg-muted/30 transition-colors">
-                <td className="p-3 data-mono">{f.id}</td>
-                <td className="p-3 font-medium">{f.name}</td>
-                <td className="p-3 text-muted-foreground">{f.department}</td>
+                <td className="p-3 font-medium">{f.full_name}</td>
+                <td className="p-3 text-muted-foreground">{f.department || "—"}</td>
+                <td className="p-3 text-muted-foreground">{f.specialization || "—"}</td>
                 <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${f.duties >= f.maxDuties ? "bg-warning" : "bg-primary"}`} style={{ width: `${(f.duties / f.maxDuties) * 100}%` }} />
-                    </div>
-                    <span className="data-mono text-xs">{f.duties}/{f.maxDuties}</span>
-                  </div>
-                </td>
-                <td className="p-3">
-                  <Badge variant={f.available ? "default" : "secondary"} className={f.available ? "bg-success/10 text-success border-0" : ""}>{f.available ? "Available" : "Unavailable"}</Badge>
+                  <Badge variant="secondary">{dutyCountMap[f.id] || 0} duties</Badge>
                 </td>
               </motion.tr>
             ))}
+            {filtered.length === 0 && (
+              <tr><td colSpan={4} className="p-6 text-center text-sm text-muted-foreground">No faculty found.</td></tr>
+            )}
           </tbody>
         </table>
       </div>
