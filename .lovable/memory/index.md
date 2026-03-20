@@ -6,6 +6,7 @@ EDAS - AI-Based Exam Duty Allocation System. Uses Lovable Cloud (Supabase) for b
 - `has_role()` security definer function used in RLS policies
 - Profile auto-created on signup via trigger
 - All admin pages now use real DB queries (no mock data)
+- FK constraints: duty_assignments, nlp_requests, conflicts → profiles(id)
 
 ## Design
 - Font: IBM Plex Sans/Mono
@@ -21,3 +22,4 @@ profiles, user_roles, exam_halls, exams, duty_assignments, nlp_requests, conflic
 - CSV upload for exam schedules (ExamsPage)
 - PDF/DOC export for duty roster (RosterPage) using jsPDF + jspdf-autotable
 - Smart allocation engine with subject-teacher exclusion, equal distribution, conflict prevention
+- NLP token extraction engine for faculty requests (dates, times, availability, reasons, duty limits)
