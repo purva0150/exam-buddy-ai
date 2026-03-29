@@ -245,8 +245,12 @@ const NlpPage = () => {
                 <p className="text-sm mt-1 text-muted-foreground">"{r.request_text}"</p>
               </div>
               <Badge
-                variant={r.status === "processed" ? "default" : "secondary"}
-                className={r.status === "processed" ? "bg-success/10 text-success border-0 shrink-0" : "shrink-0"}
+                variant={r.status === "approved" ? "default" : r.status === "rejected" ? "destructive" : "secondary"}
+                className={
+                  r.status === "approved" ? "bg-success/10 text-success border-0 shrink-0" :
+                  r.status === "rejected" ? "bg-destructive/10 text-destructive border-0 shrink-0" :
+                  r.status === "processed" ? "bg-primary/10 text-primary border-0 shrink-0" : "shrink-0"
+                }
               >
                 {r.status}
               </Badge>
@@ -256,6 +260,31 @@ const NlpPage = () => {
                 <span key={j} className="token-badge">{t.label}: {t.value}</span>
               ))}
             </div>
+            {/* Approve / Reject buttons */}
+            {(r.status === "processed" || r.status === "pending") && (
+              <div className="flex gap-2 mt-3 pt-2 border-t border-border">
+                <button
+                  onClick={async () => {
+                    await supabase.from("nlp_requests").update({ status: "approved" }).eq("id", r.id);
+                    queryClient.invalidateQueries({ queryKey: ["nlp-requests"] });
+                    toast.success("Leave approved");
+                  }}
+                  className="text-xs px-3 py-1 rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors"
+                >
+                  ✓ Approve Leave
+                </button>
+                <button
+                  onClick={async () => {
+                    await supabase.from("nlp_requests").update({ status: "rejected" }).eq("id", r.id);
+                    queryClient.invalidateQueries({ queryKey: ["nlp-requests"] });
+                    toast.info("Request rejected");
+                  }}
+                  className="text-xs px-3 py-1 rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                >
+                  ✗ Reject
+                </button>
+              </div>
+            )}
           </motion.div>
         ))}
         {requests.length === 0 && (
