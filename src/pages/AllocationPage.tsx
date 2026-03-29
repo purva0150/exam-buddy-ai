@@ -60,6 +60,15 @@ const AllocationPage = () => {
     },
   });
 
+  // Fetch approved leaves to exclude faculty on leave
+  const { data: approvedLeaves = [] } = useQuery({
+    queryKey: ["approved-leaves-for-allocation"],
+    queryFn: async () => {
+      const { data } = await supabase.from("nlp_requests").select("*").eq("status", "approved");
+      return data || [];
+    },
+  });
+
   // Fetch existing assignments
   const { data: assignments = [] } = useQuery({
     queryKey: ["duty-assignments"],
