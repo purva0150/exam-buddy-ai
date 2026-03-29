@@ -112,6 +112,17 @@ const AllocationPage = () => {
       const newAssignments: { faculty_id: string; exam_id: string; status: string }[] = [];
       let conflictCount = 0;
 
+      // Build a set of faculty on leave per date from approved NLP requests
+      const facultyOnLeave: Record<string, Set<string>> = {};
+      approvedLeaves.forEach((l: any) => {
+        const tokens = Array.isArray(l.parsed_tokens) ? l.parsed_tokens : [];
+        const dateToken = tokens.find((t: any) => t.label === "Date");
+        if (dateToken) {
+          if (!facultyOnLeave[dateToken.value]) facultyOnLeave[dateToken.value] = new Set();
+          facultyOnLeave[dateToken.value].add(l.faculty_id);
+        }
+      });
+
       // For each exam, assign required invigilators
       for (const exam of exams) {
         const needed = exam.invigilators_needed;
@@ -119,6 +130,7 @@ const AllocationPage = () => {
         // Filter eligible faculty:
         // 1. Exclude faculty whose specialization matches the exam subject (subject teacher rule)
         // 2. Exclude faculty already assigned to an exam at the same date+time
+        // 3. Exclude faculty on approved leave for that date
         const assignedAtSameSlot = new Set(
           newAssignments
             .filter(a => {
@@ -127,6 +139,8 @@ const AllocationPage = () => {
             })
             .map(a => a.faculty_id)
         );
+
+        const onLeaveThisDate = facultyOnLeave[exam.exam_date] || new Set();
 
         const eligible = facultyList
           .filter(f => {
