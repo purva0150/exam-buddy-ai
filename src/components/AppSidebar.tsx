@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
+  CalendarDays,
   MessageSquareText,
   Cpu,
   AlertTriangle,
