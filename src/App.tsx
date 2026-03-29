@@ -14,6 +14,7 @@ import RosterPage from "./pages/RosterPage";
 import AssistantPage from "./pages/AssistantPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import FacultyDashboard from "./pages/FacultyDashboard";
+import CalendarPage from "./pages/CalendarPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/faculty" element={<FacultyPage />} />
             <Route path="/exams" element={<ExamsPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/nlp" element={<NlpPage />} />
             <Route path="/allocation" element={<AllocationPage />} />
             <Route path="/conflicts" element={<ConflictsPage />} />

@@ -150,6 +150,8 @@ const AllocationPage = () => {
             if (assignedAtSameSlot.has(f.id)) return false;
             // Rule 3: Not already assigned to THIS exam
             if (newAssignments.some(a => a.exam_id === exam.id && a.faculty_id === f.id)) return false;
+            // Rule 4: Faculty on approved leave this date
+            if (onLeaveThisDate.has(f.id)) return false;
             return true;
           })
           // Sort by fewest duties first (equal distribution)
